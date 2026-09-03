@@ -1,1 +1,453 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MOBA Manager - ห้องเล่นกับเพื่อน</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; font-family: 'Segoe UI', 'Tahoma', sans-serif;
+    background: radial-gradient(circle at 50% 0%, #1b2735 0%, #0a0e14 70%);
+    color: #eef2f7; min-height: 100vh; touch-action: manipulation;
+  }
+  .screen { display: none; min-height: 100vh; flex-direction: column; align-items: center; padding: 20px; }
+  .screen.active { display: flex; }
+  h1 { font-size: 1.6em; letter-spacing: 1px; color: #f4d35e; text-shadow: 0 0 12px rgba(244,211,94,.4); margin-bottom: 4px; }
+  .sub { color: #8fa3b8; margin-bottom: 24px; font-size: .9em; }
+  .card {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 20px; width: 100%; max-width: 420px; backdrop-filter: blur(6px);
+  }
+  input {
+    width: 100%; padding: 12px 14px; margin: 8px 0; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.3); color: #eef2f7; font-size: 1em;
+  }
+  button {
+    width: 100%; padding: 12px 14px; margin: 8px 0; border-radius: 8px; border: none;
+    background: linear-gradient(135deg,#f4d35e,#e0a627); color: #1a1a1a; font-weight: 700;
+    font-size: 1em; cursor: pointer; transition: transform .1s;
+  }
+  button:active { transform: scale(0.97); }
+  button.secondary { background: rgba(255,255,255,0.08); color: #eef2f7; border: 1px solid rgba(255,255,255,0.15); }
+  button.danger { background: #c0392b; color: #fff; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  .err { color: #ff6b6b; min-height: 20px; font-size: .9em; margin-top: 6px; }
+  .code-badge { font-size: 1.8em; letter-spacing: 6px; text-align: center; color: #f4d35e; margin: 10px 0; font-weight: 800; }
 
+  /* Lobby */
+  .teams { display: flex; gap: 12px; width: 100%; max-width: 700px; }
+  .team-col { flex: 1; background: rgba(255,255,255,0.04); border-radius: 12px; padding: 12px; min-height: 220px; }
+  .team-col.teamA { border-top: 3px solid #4aa3ff; }
+  .team-col.teamB { border-top: 3px solid #ff5a5a; }
+  .team-title { font-weight: 700; margin-bottom: 8px; }
+  .player-row { display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.25); padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; font-size: .92em; }
+  .ready-dot { width: 9px; height: 9px; border-radius: 50%; background: #444; display: inline-block; margin-right: 6px; }
+  .ready-dot.on { background: #2ecc71; box-shadow: 0 0 6px #2ecc71; }
+  .host-tag { font-size: .7em; color: #f4d35e; margin-left: 6px; }
+
+  /* Draft */
+  .draft-wrap { width: 100%; max-width: 900px; }
+  .draft-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+  .timer { font-size: 1.4em; font-weight: 800; color: #f4d35e; }
+  .turn-banner { padding: 8px 14px; border-radius: 8px; background: rgba(255,255,255,0.06); font-size: .95em; }
+  .picks-row { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+  .picks-team { flex: 1; min-width: 260px; }
+  .slot-list { display: flex; gap: 6px; flex-wrap: wrap; }
+  .slot {
+    width: 52px; height: 52px; border-radius: 8px; background: rgba(0,0,0,0.3);
+    border: 2px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;
+    font-size: .65em; text-align: center; color: #ccc; overflow: hidden; flex-direction: column;
+  }
+  .slot.filled { border-color: #f4d35e; color: #fff; }
+  .champ-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+  .champ-card {
+    background: rgba(255,255,255,0.05); border: 2px solid transparent; border-radius: 10px;
+    padding: 8px 4px; text-align: center; cursor: pointer; transition: .12s;
+  }
+  .champ-card:hover:not(.disabled) { border-color: #f4d35e; transform: translateY(-2px); }
+  .champ-card.disabled { opacity: .25; cursor: not-allowed; filter: grayscale(1); }
+  .champ-icon { width: 40px; height: 40px; border-radius: 50%; margin: 0 auto 4px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 1.1em; }
+  .champ-name { font-size: .72em; font-weight: 600; }
+  .champ-role { font-size: .62em; color: #9fb0c1; text-transform: uppercase; }
+  .role-filter { display: flex; gap: 6px; margin: 10px 0; flex-wrap: wrap; }
+  .role-filter button { width: auto; padding: 6px 12px; font-size: .8em; margin: 0; }
+
+  /* Game */
+  #gameScreen { padding: 8px; }
+  #gameCanvas { background: #0e1f13; border-radius: 10px; touch-action: none; max-width: 100%; height: auto; border: 1px solid rgba(255,255,255,0.1); }
+  .hud { display: flex; justify-content: space-between; width: 100%; max-width: 800px; margin-bottom: 6px; font-size: .8em; color: #9fb0c1; }
+  .hint { font-size: .78em; color: #6f8194; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="homeScreen" class="screen active">
+  <h1>⚔️ MOBA MANAGER</h1>
+  <div class="sub">สร้างห้อง หรือเข้าร่วมห้องเพื่อนได้เลย</div>
+  <div class="card">
+    <input id="nameInput" placeholder="ชื่อของคุณ" maxlength="16">
+    <button id="btnCreate">สร้างห้องใหม่</button>
+    <div style="text-align:center;color:#6f8194;margin:6px 0;">— หรือ —</div>
+    <input id="codeInput" placeholder="รหัสห้อง (4 ตัวอักษร)" maxlength="4" style="text-transform:uppercase;">
+    <button id="btnJoin" class="secondary">เข้าร่วมห้อง</button>
+    <div class="err" id="homeErr"></div>
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div id="lobbyScreen" class="screen">
+  <h1>ห้องรอ</h1>
+  <div class="code-badge" id="roomCodeDisplay">----</div>
+  <div class="sub">ส่งรหัสนี้ให้เพื่อนเพื่อเข้าร่วม</div>
+  <div class="teams">
+    <div class="team-col teamA">
+      <div class="team-title">ทีม A</div>
+      <div id="teamAList"></div>
+    </div>
+    <div class="team-col teamB">
+      <div class="team-title">ทีม B</div>
+      <div id="teamBList"></div>
+    </div>
+  </div>
+  <div class="card" style="max-width:700px;margin-top:14px;">
+    <button id="btnSwitchTeam" class="secondary">สลับทีม</button>
+    <button id="btnReady">พร้อมแล้ว</button>
+    <button id="btnStartDraft" style="display:none;">เริ่มเกม (Ban/Pick)</button>
+    <div class="err" id="lobbyErr"></div>
+  </div>
+</div>
+
+<!-- DRAFT -->
+<div id="draftScreen" class="screen">
+  <div class="draft-wrap">
+    <div class="draft-header">
+      <div class="turn-banner" id="turnBanner">รอเริ่ม...</div>
+      <div class="timer" id="draftTimer">20</div>
+    </div>
+    <div class="picks-row">
+      <div class="picks-team">
+        <div class="team-title" style="color:#4aa3ff;">ทีม A</div>
+        <div class="slot-list" id="slotsA"></div>
+      </div>
+      <div class="picks-team">
+        <div class="team-title" style="color:#ff5a5a;">ทีม B</div>
+        <div class="slot-list" id="slotsB"></div>
+      </div>
+    </div>
+    <div class="role-filter" id="roleFilter"></div>
+    <div class="champ-grid" id="champGrid"></div>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="gameScreen" class="screen">
+  <div class="hud">
+    <span id="hudTeam">ทีมของคุณ: -</span>
+    <span id="hudChamp">แชมป์: -</span>
+  </div>
+  <canvas id="gameCanvas" width="800" height="800"></canvas>
+  <div class="hint">แตะ/คลิกบนแมพเพื่อสั่งเดิน</div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let CHAMPS = [];
+let myId = null;
+let myRoom = null;
+let roleFilterActive = 'all';
+let draftState = null;
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+socket.on('connect', () => { myId = socket.id; });
+socket.on('champList', list => { CHAMPS = list; buildRoleFilter(); });
+socket.on('errorMsg', msg => {
+  document.getElementById('homeErr').textContent = msg;
+  document.getElementById('lobbyErr').textContent = msg;
+});
+
+// ---------- HOME ----------
+document.getElementById('btnCreate').onclick = () => {
+  const name = document.getElementById('nameInput').value.trim() || 'Player';
+  socket.emit('createRoom', { name });
+};
+document.getElementById('btnJoin').onclick = () => {
+  const name = document.getElementById('nameInput').value.trim() || 'Player';
+  const code = document.getElementById('codeInput').value.trim().toUpperCase();
+  if (!code) { document.getElementById('homeErr').textContent = 'กรอกรหัสห้องก่อนนะ'; return; }
+  socket.emit('joinRoom', { name, code });
+};
+
+// ---------- LOBBY ----------
+socket.on('lobbyUpdate', data => {
+  myRoom = data.code;
+  show('lobbyScreen');
+  document.getElementById('roomCodeDisplay').textContent = data.code;
+  const teamA = data.players.filter(p => p.team === 'A');
+  const teamB = data.players.filter(p => p.team === 'B');
+  renderTeam('teamAList', teamA, data.hostId);
+  renderTeam('teamBList', teamB, data.hostId);
+  const isHost = data.hostId === myId;
+  const btnStart = document.getElementById('btnStartDraft');
+  const allReady = data.players.length > 1 && data.players.every(p => p.ready);
+  btnStart.style.display = isHost ? 'block' : 'none';
+  btnStart.disabled = !allReady;
+});
+
+function renderTeam(elId, players, hostId) {
+  const el = document.getElementById(elId);
+  el.innerHTML = players.map(p => `
+    <div class="player-row">
+      <span><span class="ready-dot ${p.ready ? 'on' : ''}"></span>${escapeHtml(p.name)}${p.id === hostId ? '<span class="host-tag">HOST</span>' : ''}</span>
+    </div>
+  `).join('') || '<div style="color:#556;font-size:.85em;">ว่าง</div>';
+}
+
+document.getElementById('btnSwitchTeam').onclick = () => socket.emit('switchTeam');
+document.getElementById('btnReady').onclick = () => socket.emit('toggleReady');
+document.getElementById('btnStartDraft').onclick = () => socket.emit('startDraft');
+
+// ---------- DRAFT ----------
+function buildRoleFilter() {
+  const roles = ['all', 'fighter', 'marksman', 'support', 'jungle', 'mage'];
+  const labels = { all: 'ทั้งหมด', fighter: 'นักสู้', marksman: 'นักยิง', support: 'ซัพพอร์ต', jungle: 'ป่า', mage: 'นักเวท' };
+  const el = document.getElementById('roleFilter');
+  el.innerHTML = roles.map(r => `<button data-role="${r}" class="${r === 'all' ? '' : 'secondary'}">${labels[r]}</button>`).join('');
+  el.querySelectorAll('button').forEach(btn => {
+    btn.onclick = () => {
+      roleFilterActive = btn.dataset.role;
+      el.querySelectorAll('button').forEach(b => b.classList.add('secondary'));
+      if (roleFilterActive !== 'all') btn.classList.add('secondary'); else btn.classList.remove('secondary');
+      btn.classList.remove('secondary');
+      renderChampGrid();
+    };
+  });
+}
+
+let draftTimerInterval = null;
+
+socket.on('draftUpdate', data => {
+  draftState = data;
+  show('draftScreen');
+  renderDraftSlots(data);
+  renderChampGrid();
+
+  const step = data.currentActor;
+  const banner = document.getElementById('turnBanner');
+  if (step === myId) {
+    const stepType = data.upcoming[data.index] ? data.upcoming[data.index].type : '';
+    banner.textContent = stepType === 'ban' ? '🚫 ตาคุณ: เลือกตัวที่จะแบน' : '✅ ตาคุณ: เลือกฮีโร่';
+    banner.style.color = '#f4d35e';
+  } else {
+    const stepInfo = data.upcoming[data.index];
+    banner.textContent = stepInfo ? `รอทีม ${stepInfo.team} ${stepInfo.type === 'ban' ? 'แบน' : 'เลือก'}...` : 'จบการดราฟต์...';
+    banner.style.color = '#9fb0c1';
+  }
+
+  if (draftTimerInterval) clearInterval(draftTimerInterval);
+  const updateTimer = () => {
+    const left = Math.max(0, Math.ceil((data.turnDeadline - Date.now()) / 1000));
+    document.getElementById('draftTimer').textContent = left;
+    if (left <= 0) clearInterval(draftTimerInterval);
+  };
+  updateTimer();
+  draftTimerInterval = setInterval(updateTimer, 250);
+});
+
+function renderDraftSlots(data) {
+  const slotsA = document.getElementById('slotsA');
+  const slotsB = document.getElementById('slotsB');
+  const picksA = data.picks.filter(p => p.team === 'A');
+  const picksB = data.picks.filter(p => p.team === 'B');
+  slotsA.innerHTML = picksA.map(p => slotHtml(p)).join('') + emptySlots(5 - picksA.length);
+  slotsB.innerHTML = picksB.map(p => slotHtml(p)).join('') + emptySlots(5 - picksB.length);
+
+  const banRow = document.getElementById('banRow');
+}
+
+function slotHtml(p) {
+  const c = CHAMPS.find(c => c.id === p.champion);
+  return `<div class="slot filled" style="border-color:${c ? c.color : '#f4d35e'}">${c ? c.name : '?'}</div>`;
+}
+function emptySlots(n) {
+  return Array(Math.max(0, n)).fill('<div class="slot">-</div>').join('');
+}
+
+function renderChampGrid() {
+  if (!draftState) return;
+  const taken = new Set([...draftState.banned, ...draftState.picks.map(p => p.champion)]);
+  const grid = document.getElementById('champGrid');
+  const list = roleFilterActive === 'all' ? CHAMPS : CHAMPS.filter(c => c.role === roleFilterActive);
+  const myTurn = draftState.currentActor === myId;
+  grid.innerHTML = list.map(c => {
+    const disabled = taken.has(c.id) || !myTurn;
+    return `
+      <div class="champ-card ${disabled ? 'disabled' : ''}" data-id="${c.id}">
+        <div class="champ-icon" style="background:${c.color}">${c.name[0]}</div>
+        <div class="champ-name">${c.name}</div>
+        <div class="champ-role">${roleLabel(c.role)}</div>
+      </div>`;
+  }).join('');
+  grid.querySelectorAll('.champ-card:not(.disabled)').forEach(card => {
+    card.onclick = () => socket.emit('draftAction', { championId: card.dataset.id });
+  });
+}
+function roleLabel(r) {
+  return { fighter: 'นักสู้', marksman: 'นักยิง', support: 'ซัพพอร์ต', jungle: 'ป่า', mage: 'นักเวท' }[r] || r;
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+// ---------- GAME ----------
+let gameData = { champions: [], creeps: [], towers: [], lanes: [], mapSize: 800, baseA: 50, baseB: 750 };
+let myChampionId = null, myTeam = null;
+
+socket.on('gameStart', data => {
+  gameData.lanes = data.lanes;
+  gameData.mapSize = data.mapSize;
+  gameData.baseA = data.baseA;
+  gameData.baseB = data.baseB;
+  gameData.towers = data.towers;
+  gameData.champions = data.champions.map(c => ({ ...c, x: c.team === 'A' ? data.baseA : data.baseB, y: 400, hp: 1000, maxHp: 1000 }));
+  gameData.creeps = [];
+
+  const me = data.champions.find(c => c.playerId === myId);
+  if (me) {
+    myTeam = me.team;
+    myChampionId = me.championId;
+    const champDef = CHAMPS.find(c => c.id === me.championId);
+    document.getElementById('hudTeam').textContent = 'ทีมของคุณ: ' + myTeam;
+    document.getElementById('hudChamp').textContent = 'แชมป์: ' + (champDef ? champDef.name : me.championId);
+  }
+  show('gameScreen');
+  requestAnimationFrame(drawGame);
+});
+
+socket.on('gameTick', data => {
+  data.champions.forEach(u => {
+    const c = gameData.champions.find(c => c.playerId === u.playerId);
+    if (c) { c.x = u.x; c.y = u.y; c.hp = u.hp; c.maxHp = u.maxHp; }
+  });
+  gameData.creeps = data.creeps;
+  data.towers.forEach(u => {
+    const t = gameData.towers.find(t => t.id === u.id);
+    if (t) { t.hp = u.hp; t.maxHp = u.maxHp; t.alive = u.alive; }
+  });
+});
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+function mapPointFromEvent(evt) {
+  const rect = canvas.getBoundingClientRect();
+  const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+  const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+}
+function handlePointer(evt) {
+  evt.preventDefault();
+  const p = mapPointFromEvent(evt);
+  socket.emit('move', p);
+}
+canvas.addEventListener('pointerdown', handlePointer);
+canvas.addEventListener('touchstart', handlePointer, { passive: false });
+
+function drawGame() {
+  ctx.fillStyle = '#0e1f13';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // lanes
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 26;
+  gameData.lanes.forEach(l => {
+    ctx.beginPath();
+    ctx.moveTo(gameData.baseA, l.y);
+    ctx.lineTo(gameData.baseB, l.y);
+    ctx.stroke();
+  });
+
+  // bases
+  drawBase(gameData.baseA, 400, '#4aa3ff');
+  drawBase(gameData.baseB, 400, '#ff5a5a');
+
+  // towers
+  gameData.towers.forEach(t => {
+    if (!t.alive) return;
+    const color = t.team === 'A' ? '#4aa3ff' : '#ff5a5a';
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(t.x, t.y - 16);
+    ctx.lineTo(t.x + 14, t.y + 10);
+    ctx.lineTo(t.x - 14, t.y + 10);
+    ctx.closePath();
+    ctx.fill();
+    drawHpBar(t.x, t.y - 26, t.hp, t.maxHp, 30, color);
+  });
+
+  // creeps
+  gameData.creeps.forEach(cr => {
+    const color = cr.team === 'A' ? '#7fc4ff' : '#ff9d9d';
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(cr.x, cr.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // champions
+  gameData.champions.forEach(c => {
+    if (c.hp <= 0) return;
+    const def = CHAMPS.find(d => d.id === c.championId);
+    const color = def ? def.color : (c.team === 'A' ? '#4aa3ff' : '#ff5a5a');
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, 14, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = c.team === 'A' ? '#4aa3ff' : '#ff5a5a';
+    ctx.stroke();
+    if (c.playerId === myId) {
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, 19, 0, Math.PI * 2);
+      ctx.strokeStyle = '#f4d35e';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(def ? def.name[0] : '?', c.x, c.y + 4);
+    drawHpBar(c.x, c.y - 24, c.hp, c.maxHp, 32, '#2ecc71');
+    ctx.fillStyle = '#dfe8ef';
+    ctx.font = '9px sans-serif';
+    ctx.fillText(c.name, c.x, c.y + 28);
+  });
+
+  requestAnimationFrame(drawGame);
+}
+function drawBase(x, y, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, 26, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#0e1f13';
+  ctx.beginPath();
+  ctx.arc(x, y, 16, 0, Math.PI * 2);
+  ctx.fill();
+}
+function drawHpBar(cx, y, hp, maxHp, width, color) {
+  const x = cx - width / 2;
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(x, y, width, 5);
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, width * Math.max(0, hp / maxHp), 5);
+}
+</script>
+</body>
+</html>
