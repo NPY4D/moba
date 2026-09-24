@@ -9,58 +9,71 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ---------------- Champion roster (flavor + role only, skills not yet functional) ----------------
+// ---------------- Champion roster ----------------
+// power = raw strength rating used by the auto-sim (not shown to the player as a "stat", just flavor-adjacent)
 const CHAMPIONS = [
-  { id: 'ronak', name: 'Ronak',  role: 'fighter',   skill: 'Whirlwind Slash', color: '#e74c3c' },
-  { id: 'kade',  name: 'Kade',   role: 'fighter',   skill: 'Iron Fist',       color: '#e74c3c' },
-  { id: 'vera',  name: 'Vera',   role: 'fighter',   skill: 'Blood Charge',    color: '#e74c3c' },
-  { id: 'thorne',name: 'Thorne', role: 'fighter',   skill: 'Thorn Guard',     color: '#e74c3c' },
-  { id: 'lyra',  name: 'Lyra',   role: 'marksman',  skill: 'Wind Arrow',      color: '#f39c12' },
-  { id: 'zeke',  name: 'Zeke',   role: 'marksman',  skill: 'Rapid Fire',      color: '#f39c12' },
-  { id: 'nova',  name: 'Nova',   role: 'marksman',  skill: 'Meteor Shot',     color: '#f39c12' },
-  { id: 'kai',   name: 'Kai',    role: 'marksman',  skill: 'Piercing Bolt',   color: '#f39c12' },
-  { id: 'mira',  name: 'Mira',   role: 'support',   skill: 'Moon Heal',       color: '#2ecc71' },
-  { id: 'doran', name: 'Doran',  role: 'support',   skill: 'Holy Barrier',    color: '#2ecc71' },
-  { id: 'sana',  name: 'Sana',   role: 'support',   skill: 'Spirit Ward',     color: '#2ecc71' },
-  { id: 'boro',  name: 'Boro',   role: 'support',   skill: 'Binding Chain',   color: '#2ecc71' },
-  { id: 'fenna', name: 'Fenna',  role: 'jungle',    skill: 'Shadow Pounce',   color: '#16a085' },
-  { id: 'grix',  name: 'Grix',   role: 'jungle',    skill: 'Bramble Smash',   color: '#16a085' },
-  { id: 'yuna',  name: 'Yuna',   role: 'jungle',    skill: 'Night Pounce',    color: '#16a085' },
-  { id: 'bask',  name: 'Bask',   role: 'jungle',    skill: 'Iron Maul',       color: '#16a085' },
-  { id: 'elowen',name: 'Elowen', role: 'mage',      skill: 'Fireball',        color: '#9b59b6' },
-  { id: 'ozzy',  name: 'Ozzy',   role: 'mage',      skill: 'Frost Nova',      color: '#9b59b6' },
-  { id: 'sable', name: 'Sable',  role: 'mage',      skill: 'Dark Bolt',       color: '#9b59b6' },
-  { id: 'wren',  name: 'Wren',   role: 'mage',      skill: 'Chain Lightning', color: '#9b59b6' },
+  { id: 'ronak',  name: 'Ronak',  role: 'fighter',  skill: 'Whirlwind Slash', color: '#e74c3c', power: 74 },
+  { id: 'kade',   name: 'Kade',   role: 'fighter',  skill: 'Iron Fist',       color: '#e74c3c', power: 71 },
+  { id: 'vera',   name: 'Vera',   role: 'fighter',  skill: 'Blood Charge',    color: '#e74c3c', power: 76 },
+  { id: 'thorne', name: 'Thorne', role: 'fighter',  skill: 'Thorn Guard',     color: '#e74c3c', power: 69 },
+  { id: 'lyra',   name: 'Lyra',   role: 'marksman', skill: 'Wind Arrow',      color: '#f39c12', power: 73 },
+  { id: 'zeke',   name: 'Zeke',   role: 'marksman', skill: 'Rapid Fire',      color: '#f39c12', power: 70 },
+  { id: 'nova',   name: 'Nova',   role: 'marksman', skill: 'Meteor Shot',     color: '#f39c12', power: 75 },
+  { id: 'kai',    name: 'Kai',    role: 'marksman', skill: 'Piercing Bolt',   color: '#f39c12', power: 68 },
+  { id: 'mira',   name: 'Mira',   role: 'support',  skill: 'Moon Heal',       color: '#2ecc71', power: 58 },
+  { id: 'doran',  name: 'Doran',  role: 'support',  skill: 'Holy Barrier',    color: '#2ecc71', power: 61 },
+  { id: 'sana',   name: 'Sana',   role: 'support',  skill: 'Spirit Ward',     color: '#2ecc71', power: 56 },
+  { id: 'boro',   name: 'Boro',   role: 'support',  skill: 'Binding Chain',   color: '#2ecc71', power: 60 },
+  { id: 'fenna',  name: 'Fenna',  role: 'jungle',   skill: 'Shadow Pounce',   color: '#16a085', power: 70 },
+  { id: 'grix',   name: 'Grix',   role: 'jungle',   skill: 'Bramble Smash',   color: '#16a085', power: 68 },
+  { id: 'yuna',   name: 'Yuna',   role: 'jungle',   skill: 'Night Pounce',    color: '#16a085', power: 72 },
+  { id: 'bask',   name: 'Bask',   role: 'jungle',   skill: 'Iron Maul',       color: '#16a085', power: 66 },
+  { id: 'elowen', name: 'Elowen', role: 'mage',     skill: 'Fireball',        color: '#9b59b6', power: 74 },
+  { id: 'ozzy',   name: 'Ozzy',   role: 'mage',     skill: 'Frost Nova',      color: '#9b59b6', power: 69 },
+  { id: 'sable',  name: 'Sable',  role: 'mage',     skill: 'Dark Bolt',       color: '#9b59b6', power: 72 },
+  { id: 'wren',   name: 'Wren',   role: 'mage',     skill: 'Chain Lightning', color: '#9b59b6', power: 67 },
 ];
 
-// ---------------- Map / game constants ----------------
-const MAP_SIZE = 800;
-const LANES = [
-  { name: 'top', y: 150 },
-  { name: 'mid', y: 400 },
-  { name: 'bot', y: 650 },
-];
-const BASE_A_X = 50, BASE_B_X = 750;
-const TOWER_A_X = 220, TOWER_B_X = 580;
+const ROLE_TO_LANE = { fighter: 'top', mage: 'mid', marksman: 'bot', support: 'bot', jungle: 'jungle' };
+const LANES = ['top', 'mid', 'bot'];
+const LANE_LABEL = { top: 'บน', mid: 'กลาง', bot: 'ล่าง' };
+
+const TACTICS = {
+  aggressive: { label: 'เกมรุก', powerMult: 1.15, killBonus: 1.35, towerDefense: 0.85 },
+  balanced:   { label: 'สมดุล',   powerMult: 1.0,  killBonus: 1.0,  towerDefense: 1.0 },
+  defensive:  { label: 'เกมรับ', powerMult: 0.9,  killBonus: 0.75, towerDefense: 1.3 },
+};
+
 const DRAFT_TURN_MS = 20000;
-const WAVE_INTERVAL_S = 20;
+const TACTIC_TURN_MS = 15000;
+const MAX_ROUNDS = 14;
 
 const rooms = {}; // code -> room
 
 function genCode() {
   return Math.random().toString(36).substring(2, 6).toUpperCase();
 }
-
+function safeName(name) {
+  return (String(name || 'Player').trim().slice(0, 16)) || 'Player';
+}
+function currentRoom(socket) {
+  const code = socket.data.room;
+  return code ? rooms[code] : null;
+}
+function clearRoom(code) {
+  const room = rooms[code];
+  if (!room) return;
+  if (room.draftTimer) clearTimeout(room.draftTimer);
+  if (room.tacticTimer) clearTimeout(room.tacticTimer);
+  delete rooms[code];
+}
 function publicPlayers(room) {
   return room.players.map(p => ({ id: p.id, name: p.name, team: p.team, ready: p.ready, champion: p.champion }));
 }
-
 function broadcastLobby(code) {
   const room = rooms[code];
   if (!room) return;
-  io.to(code).emit('lobbyUpdate', {
-    code, hostId: room.hostId, players: publicPlayers(room), phase: room.phase,
-  });
+  io.to(code).emit('lobbyUpdate', { code, hostId: room.hostId, players: publicPlayers(room), phase: room.phase });
 }
 
 io.on('connection', socket => {
@@ -72,7 +85,7 @@ io.on('connection', socket => {
     rooms[code] = {
       code, hostId: socket.id, phase: 'lobby',
       players: [{ id: socket.id, name: safeName(name), team: 'A', ready: false, champion: null }],
-      draft: null, game: null,
+      draft: null, tactics: null, matchResult: null,
     };
     socket.join(code);
     socket.data.room = code;
@@ -115,20 +128,15 @@ io.on('connection', socket => {
     if (!room || room.hostId !== socket.id || room.phase !== 'lobby') return;
     const teamA = room.players.filter(p => p.team === 'A');
     const teamB = room.players.filter(p => p.team === 'B');
-    if (teamA.length < 1 || teamB.length < 1) {
-      return socket.emit('errorMsg', 'ต้องมีผู้เล่นทั้งสองทีมอย่างน้อยทีมละ 1 คน');
-    }
-    if (teamA.length > 5 || teamB.length > 5) {
-      return socket.emit('errorMsg', 'แต่ละทีมรับได้สูงสุด 5 คน');
-    }
+    if (teamA.length < 1 || teamB.length < 1) return socket.emit('errorMsg', 'ต้องมีผู้เล่นทั้งสองทีมอย่างน้อยทีมละ 1 คน');
+    if (teamA.length > 5 || teamB.length > 5) return socket.emit('errorMsg', 'แต่ละทีมรับได้สูงสุด 5 คน');
+
     room.phase = 'draft';
     const queue = [];
-    // Alternating bans, sides swap, 3 per team, A starts
     for (let i = 0; i < 3; i++) {
       queue.push({ type: 'ban', team: 'A', actorId: teamA[0].id });
       queue.push({ type: 'ban', team: 'B', actorId: teamB[0].id });
     }
-    // Alternating picks, one per player, interleaved (B picks first after A banned first)
     const maxLen = Math.max(teamA.length, teamB.length);
     for (let i = 0; i < maxLen; i++) {
       if (teamB[i]) queue.push({ type: 'pick', team: 'B', actorId: teamB[i].id });
@@ -147,16 +155,31 @@ io.on('connection', socket => {
     resolveDraftStep(room.code, championId);
   });
 
-  socket.on('move', ({ x, y }) => {
+  socket.on('chooseTactic', ({ tactic }) => {
     const room = currentRoom(socket);
-    if (!room || room.phase !== 'game') return;
-    const champ = room.game.champions.find(c => c.playerId === socket.id);
-    if (champ && champ.hp > 0) {
-      champ.target = {
-        x: clamp(x, 10, MAP_SIZE - 10),
-        y: clamp(y, 10, MAP_SIZE - 10),
-      };
+    if (!room || room.phase !== 'tactics' || !TACTICS[tactic]) return;
+    const p = room.players.find(p => p.id === socket.id);
+    if (!p) return;
+    const captainA = room.players.filter(pl => pl.team === 'A')[0];
+    const captainB = room.players.filter(pl => pl.team === 'B')[0];
+    if (p.id !== captainA.id && p.id !== captainB.id) return; // only captains decide the team tactic
+    room.tactics[p.team] = tactic;
+    broadcastTactics(room.code);
+    if (room.tactics.A && room.tactics.B) {
+      if (room.tacticTimer) clearTimeout(room.tacticTimer);
+      runMatch(room.code);
     }
+  });
+
+  socket.on('playAgain', () => {
+    const room = currentRoom(socket);
+    if (!room || room.hostId !== socket.id) return;
+    room.phase = 'lobby';
+    room.draft = null;
+    room.tactics = null;
+    room.matchResult = null;
+    room.players.forEach(p => { p.champion = null; p.ready = false; });
+    broadcastLobby(room.code);
   });
 
   socket.on('disconnect', () => {
@@ -169,28 +192,11 @@ io.on('connection', socket => {
   });
 });
 
-function safeName(name) {
-  return (String(name || 'Player').trim().slice(0, 16)) || 'Player';
-}
-function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-function currentRoom(socket) {
-  const code = socket.data.room;
-  return code ? rooms[code] : null;
-}
-function clearRoom(code) {
-  const room = rooms[code];
-  if (!room) return;
-  if (room.gameLoop) clearInterval(room.gameLoop);
-  if (room.draftTimer) clearTimeout(room.draftTimer);
-  delete rooms[code];
-}
-
 // ---------------- Draft ----------------
 function broadcastDraft(code) {
   const room = rooms[code];
   if (!room || !room.draft) return;
   io.to(code).emit('draftUpdate', {
-    total: room.draft.queue.length,
     index: room.draft.index,
     upcoming: room.draft.queue.map(q => ({ type: q.type, team: q.team })),
     banned: room.draft.banned,
@@ -199,31 +205,25 @@ function broadcastDraft(code) {
     currentActor: room.draft.queue[room.draft.index] ? room.draft.queue[room.draft.index].actorId : null,
   });
 }
-
 function scheduleDraftTimeout(code) {
   const room = rooms[code];
   if (!room || !room.draft) return;
   if (room.draftTimer) clearTimeout(room.draftTimer);
   const step = room.draft.queue[room.draft.index];
   if (!step) return;
-  const timeLeft = room.draft.turnDeadline - Date.now();
-  room.draftTimer = setTimeout(() => autoResolve(code), Math.max(timeLeft, 0));
+  room.draftTimer = setTimeout(() => autoResolve(code), Math.max(room.draft.turnDeadline - Date.now(), 0));
 }
-
 function availableChampions(room) {
   const taken = new Set([...room.draft.banned, ...room.players.filter(p => p.champion).map(p => p.champion)]);
   return CHAMPIONS.filter(c => !taken.has(c.id));
 }
-
 function autoResolve(code) {
   const room = rooms[code];
   if (!room || !room.draft) return;
   const avail = availableChampions(room);
   if (avail.length === 0) return;
-  const pick = avail[Math.floor(Math.random() * avail.length)];
-  resolveDraftStep(code, pick.id);
+  resolveDraftStep(code, avail[Math.floor(Math.random() * avail.length)].id);
 }
-
 function resolveDraftStep(code, championId) {
   const room = rooms[code];
   const step = room.draft.queue[room.draft.index];
@@ -239,7 +239,7 @@ function resolveDraftStep(code, championId) {
   room.draft.index++;
   if (room.draft.index >= room.draft.queue.length) {
     if (room.draftTimer) clearTimeout(room.draftTimer);
-    startGame(code);
+    startTactics(code);
     return;
   }
   room.draft.turnDeadline = Date.now() + DRAFT_TURN_MS;
@@ -247,105 +247,144 @@ function resolveDraftStep(code, championId) {
   scheduleDraftTimeout(code);
 }
 
-// ---------------- Game (MOBA map: lanes, towers, creep waves) ----------------
-function startGame(code) {
+// ---------------- Tactics phase ----------------
+function startTactics(code) {
   const room = rooms[code];
-  room.phase = 'game';
-  const champions = room.players.map(p => {
+  room.phase = 'tactics';
+  room.tactics = { A: null, B: null, deadline: Date.now() + TACTIC_TURN_MS };
+  const captainA = room.players.filter(p => p.team === 'A')[0];
+  const captainB = room.players.filter(p => p.team === 'B')[0];
+  io.to(code).emit('tacticsStart', {
+    deadline: room.tactics.deadline,
+    captainA: captainA.id, captainB: captainB.id,
+    options: Object.entries(TACTICS).map(([id, t]) => ({ id, label: t.label })),
+    rosterA: room.players.filter(p => p.team === 'A').map(p => ({ name: p.name, champion: p.champion })),
+    rosterB: room.players.filter(p => p.team === 'B').map(p => ({ name: p.name, champion: p.champion })),
+  });
+  room.tacticTimer = setTimeout(() => {
+    if (!room.tactics.A) room.tactics.A = 'balanced';
+    if (!room.tactics.B) room.tactics.B = 'balanced';
+    runMatch(code);
+  }, TACTIC_TURN_MS);
+}
+function broadcastTactics(code) {
+  const room = rooms[code];
+  io.to(code).emit('tacticsUpdate', { A: room.tactics.A, B: room.tactics.B });
+}
+
+// ---------------- Auto match simulation (runs instantly, client replays the log) ----------------
+function runMatch(code) {
+  const room = rooms[code];
+  room.phase = 'result';
+
+  const rosterOf = team => room.players.filter(p => p.team === team).map(p => {
     const def = CHAMPIONS.find(c => c.id === p.champion) || CHAMPIONS[Math.floor(Math.random() * CHAMPIONS.length)];
-    const spawnX = p.team === 'A' ? BASE_A_X : BASE_B_X;
-    return {
-      playerId: p.id, name: p.name, team: p.team, championId: def.id,
-      x: spawnX, y: 400, target: null, hp: 1000, maxHp: 1000, speed: 3.2,
-    };
+    return { playerId: p.id, name: p.name, championId: def.id, championName: def.name, role: def.role, power: def.power, lane: ROLE_TO_LANE[def.role], kills: 0 };
   });
-  const towers = [];
-  LANES.forEach(lane => {
-    towers.push({ id: `A-${lane.name}`, team: 'A', x: TOWER_A_X, y: lane.y, hp: 1500, maxHp: 1500, range: 90, dps: 40, alive: true });
-    towers.push({ id: `B-${lane.name}`, team: 'B', x: TOWER_B_X, y: lane.y, hp: 1500, maxHp: 1500, range: 90, dps: 40, alive: true });
-  });
-  room.game = { champions, towers, creeps: [], nextCreepId: 1, lastWave: -WAVE_INTERVAL_S, startedAt: Date.now() };
 
-  io.to(code).emit('gameStart', {
-    mapSize: MAP_SIZE, lanes: LANES, baseA: BASE_A_X, baseB: BASE_B_X,
-    champions: champions.map(c => ({ playerId: c.playerId, name: c.name, team: c.team, championId: c.championId })),
-    towers,
-  });
-  room.gameLoop = setInterval(() => tickGame(code), 100);
-}
+  const teamA = rosterOf('A');
+  const teamB = rosterOf('B');
+  const tacticA = TACTICS[room.tactics.A];
+  const tacticB = TACTICS[room.tactics.B];
 
-function spawnWave(room) {
-  LANES.forEach(lane => {
-    for (let i = 0; i < 3; i++) {
-      room.game.creeps.push({ id: room.game.nextCreepId++, team: 'A', lane: lane.name, x: BASE_A_X, y: lane.y + (i - 1) * 16, hp: 220, maxHp: 220, speed: 1.6 });
-      room.game.creeps.push({ id: room.game.nextCreepId++, team: 'B', lane: lane.name, x: BASE_B_X, y: lane.y + (i - 1) * 16, hp: 220, maxHp: 220, speed: 1.6 });
-    }
-  });
-}
+  const towers = {};
+  LANES.forEach(l => { towers[l] = { A: true, B: true }; });
+  const laneStreak = { top: { A: 0, B: 0 }, mid: { A: 0, B: 0 }, bot: { A: 0, B: 0 } };
 
-function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+  const events = [];
+  let winner = null;
 
-function tickGame(code) {
-  const room = rooms[code];
-  if (!room || !room.game) return;
-  const g = room.game;
-  const elapsed = (Date.now() - g.startedAt) / 1000;
-
-  if (elapsed - g.lastWave >= WAVE_INTERVAL_S) {
-    g.lastWave = elapsed;
-    spawnWave(room);
+  function laneRoster(roster, lane) {
+    return roster.filter(c => c.lane === lane);
+  }
+  function janglePower(roster) {
+    return roster.filter(c => c.lane === 'jungle').reduce((s, c) => s + c.power, 0);
+  }
+  function towersRemaining(team) {
+    return LANES.filter(l => towers[l][team]).length;
   }
 
-  g.champions.forEach(c => {
-    if (c.hp <= 0 || !c.target) return;
-    const dx = c.target.x - c.x, dy = c.target.y - c.y;
-    const d = Math.hypot(dx, dy);
-    if (d < c.speed) { c.x = c.target.x; c.y = c.target.y; c.target = null; }
-    else { c.x += (dx / d) * c.speed; c.y += (dy / d) * c.speed; }
-  });
+  let round = 1;
+  while (round <= MAX_ROUNDS && !winner) {
+    for (const lane of LANES) {
+      if (winner) break;
+      const laneA = laneRoster(teamA, lane);
+      const laneB = laneRoster(teamB, lane);
+      if (laneA.length === 0 && laneB.length === 0) continue;
 
-  g.creeps.forEach(cr => {
-    const targetX = cr.team === 'A' ? BASE_B_X : BASE_A_X;
-    const dx = targetX - cr.x;
-    if (Math.abs(dx) > 2) cr.x += Math.sign(dx) * cr.speed;
-  });
-  g.creeps = g.creeps.filter(cr => {
-    const targetX = cr.team === 'A' ? BASE_B_X : BASE_A_X;
-    return Math.abs(cr.x - targetX) > 10;
-  });
+      const gankA = Math.random() < 0.5 ? janglePower(teamA) * 0.4 : 0;
+      const gankB = Math.random() < 0.5 ? janglePower(teamB) * 0.4 : 0;
 
-  g.towers.forEach(t => {
-    if (!t.alive) return;
-    let target = null, best = Infinity;
-    g.creeps.forEach(cr => {
-      if (cr.team === t.team) return;
-      const d = dist(t, cr);
-      if (d <= t.range && d < best) { best = d; target = cr; }
-    });
-    if (!target) {
-      g.champions.forEach(c => {
-        if (c.team === t.team || c.hp <= 0) return;
-        const d = dist(t, c);
-        if (d <= t.range && d < best) { best = d; target = c; }
-      });
+      let powerA = (laneA.reduce((s, c) => s + c.power, 0) + gankA) * tacticA.powerMult;
+      let powerB = (laneB.reduce((s, c) => s + c.power, 0) + gankB) * tacticB.powerMult;
+      if (!towers[lane].A) powerB *= 1.1;
+      if (!towers[lane].B) powerA *= 1.1;
+
+      powerA *= 0.85 + Math.random() * 0.3;
+      powerB *= 0.85 + Math.random() * 0.3;
+
+      const laneWinnerTeam = powerA >= powerB ? 'A' : 'B';
+      const winnerRoster = laneWinnerTeam === 'A' ? teamA : teamB;
+      const loserRoster = laneWinnerTeam === 'A' ? teamB : teamA;
+      const winnerTactic = laneWinnerTeam === 'A' ? tacticA : tacticB;
+      const winnerLaners = laneRoster(winnerRoster, lane);
+      const loserLaners = laneRoster(loserRoster, lane);
+
+      laneStreak[lane][laneWinnerTeam]++;
+      laneStreak[lane][laneWinnerTeam === 'A' ? 'B' : 'A'] = 0;
+
+      const roll = Math.random();
+      if (roll < 0.4 * winnerTactic.killBonus && loserLaners.length > 0) {
+        const killer = (winnerLaners.length ? winnerLaners : winnerRoster)[Math.floor(Math.random() * (winnerLaners.length ? winnerLaners.length : winnerRoster.length))];
+        const victim = loserLaners[Math.floor(Math.random() * loserLaners.length)];
+        killer.kills++;
+        events.push({ round, team: laneWinnerTeam, type: 'kill', lane, text: `${killer.name} (${killer.championName}) สอยตาย ${victim.name} (${victim.championName}) ที่เลน${LANE_LABEL[lane]}` });
+      } else {
+        events.push({ round, team: laneWinnerTeam, type: 'farm', lane, text: `ทีม ${laneWinnerTeam} คุมเลน${LANE_LABEL[lane]}ได้ในรอบนี้` });
+      }
+
+      const loserTeamKey = laneWinnerTeam === 'A' ? 'B' : 'A';
+      const wasAlreadyExposed = towersRemaining(loserTeamKey) === 0;
+
+      if (laneStreak[lane][laneWinnerTeam] >= 2 && towers[lane][loserTeamKey]) {
+        const towerDefRoll = Math.random() * (loserTeamKey === 'A' ? tacticA.towerDefense : tacticB.towerDefense);
+        if (towerDefRoll < 0.55) {
+          towers[lane][loserTeamKey] = false;
+          laneStreak[lane][laneWinnerTeam] = 0;
+          events.push({ round, team: laneWinnerTeam, type: 'tower', lane, text: `ป้อมเลน${LANE_LABEL[lane]}ของทีม ${loserTeamKey} ถูกทำลาย!` });
+          if (towersRemaining(loserTeamKey) === 0) {
+            events.push({ round, team: laneWinnerTeam, type: 'nexus-exposed', lane, text: `ป้อมทีม ${loserTeamKey} หมดแล้ว! Nexus เปิดโล่ง` });
+          }
+        }
+      }
+
+      // If the loser's nexus was already exposed before this exchange, a lane win now has a chance to end the game
+      if (wasAlreadyExposed && Math.random() < 0.45) {
+        winner = laneWinnerTeam;
+        events.push({ round, team: laneWinnerTeam, type: 'victory', lane, text: `ทีม ${laneWinnerTeam} บุกทำลาย Nexus! จบเกม` });
+      }
     }
-    if (target) target.hp -= t.dps * 0.1;
-  });
-  g.creeps = g.creeps.filter(cr => cr.hp > 0);
+    round++;
+  }
 
-  g.creeps.forEach(cr => {
-    g.towers.forEach(t => {
-      if (!t.alive || t.team === cr.team) return;
-      if (dist(cr, t) < 30) t.hp -= 8 * 0.1;
-    });
-  });
-  g.towers.forEach(t => { if (t.hp <= 0 && t.alive) { t.alive = false; t.hp = 0; } });
+  if (!winner) {
+    const killsA = teamA.reduce((s, c) => s + c.kills, 0);
+    const killsB = teamB.reduce((s, c) => s + c.kills, 0);
+    const towersA = towersRemaining('A'), towersB = towersRemaining('B');
+    const scoreA = killsA * 2 + (3 - towersB) * 3;
+    const scoreB = killsB * 2 + (3 - towersA) * 3;
+    winner = scoreA >= scoreB ? 'A' : 'B';
+    events.push({ round: MAX_ROUNDS, team: winner, type: 'victory', lane: 'mid', text: `หมดเวลาการแข่งขัน ทีม ${winner} ชนะด้วยคะแนนรวม` });
+  }
 
-  io.to(code).emit('gameTick', {
-    champions: g.champions.map(c => ({ playerId: c.playerId, x: c.x, y: c.y, hp: c.hp, maxHp: c.maxHp })),
-    creeps: g.creeps.map(cr => ({ id: cr.id, team: cr.team, x: cr.x, y: cr.y, hp: cr.hp, maxHp: cr.maxHp })),
-    towers: g.towers.map(t => ({ id: t.id, hp: t.hp, maxHp: t.maxHp, alive: t.alive })),
-  });
+  room.matchResult = {
+    winner, events,
+    teamA: teamA.map(c => ({ name: c.name, championId: c.championId, championName: c.championName, kills: c.kills })),
+    teamB: teamB.map(c => ({ name: c.name, championId: c.championId, championName: c.championName, kills: c.kills })),
+    towers,
+    tacticA: room.tactics.A, tacticB: room.tactics.B,
+  };
+  io.to(code).emit('matchResult', room.matchResult);
 }
 
 const PORT = process.env.PORT || 3000;

@@ -1,10 +1,10 @@
 {
   "name": "moba-room",
   "version": "1.0.0",
-  "description": "",
+  "description": "เกมสไตล์ \"ผู้จัดการ\" เหมือน PITCH LEGENDS: ผู้เล่น ban/pick ฮีโร่ แล้วตั้งแท็คติกทีมก่อนแมตช์ จากนั้นระบบจะ **จำลองผลการแข่งขันทั้งหมดให้เอง** ไม่ต้องบังคับตัวละครเล่นสด ผลจะไหลออกมาเป็นคอมเมนตารี (kill feed / ป้อมถูกทำลาย / ใครชนะ) แบบดูเพลิน ๆ",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
